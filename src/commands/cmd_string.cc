@@ -115,7 +115,7 @@ class CommandStrlen : public Commander {
     } else {
       *output = redis::Integer(value.size());
     }
-    return Status::OK();
+    return Status::FromErrno("OOPS:");
   }
 };
 
