@@ -119,6 +119,25 @@ class CommandStrlen : public Commander {
   }
 };
 
+class CommandDoubleStrlen : public Commander {
+ public:
+  Status Execute(Server *svr, Connection *conn, std::string *output) override {
+    std::string value;
+    redis::String string_db(svr->storage, conn->GetNamespace());
+    auto s = string_db.Get(args_[1], &value);
+    if (!s.ok() && !s.IsNotFound()) {
+      return {Status::RedisExecErr, s.ToString()};
+    }
+
+    if (s.IsNotFound()) {
+      *output = redis::Integer(0);
+    } else {
+      *output = redis::Integer(value.size() * 2);
+    }
+    return Status::OK();
+  }
+};
+
 class CommandGetSet : public Commander {
  public:
   Status Execute(Server *svr, Connection *conn, std::string *output) override {
@@ -602,6 +621,7 @@ class CommandCAD : public Commander {
 REDIS_REGISTER_COMMANDS(
     MakeCmdAttr<CommandGet>("get", 2, "read-only", 1, 1, 1), MakeCmdAttr<CommandGetEx>("getex", -2, "write", 1, 1, 1),
     MakeCmdAttr<CommandStrlen>("strlen", 2, "read-only", 1, 1, 1),
+    MakeCmdAttr<CommandDoubleStrlen>("doublestrlen", 2, "read-only", 1, 1, 1),
     MakeCmdAttr<CommandGetSet>("getset", 3, "write", 1, 1, 1),
     MakeCmdAttr<CommandGetRange>("getrange", 4, "read-only", 1, 1, 1),
     MakeCmdAttr<CommandSubStr>("substr", 4, "read-only", 1, 1, 1),
