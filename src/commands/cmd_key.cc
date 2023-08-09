@@ -30,6 +30,21 @@
 
 namespace redis {
 
+class CommandDump : public Commander {
+ public:
+  Status Execute(Server *svr, Connection *conn, std::string *output) override {
+    redis::Database redis(svr->storage, conn->GetNamespace());
+    std::string raw_value;
+    auto s = redis.GetRawValue(args_[1], &raw_value);
+    if (s.ok()) {
+      *output = redis::BulkString(raw_value);
+      return Status::OK();
+    }
+
+    return {Status::RedisExecErr, s.ToString()};
+  }
+};
+
 class CommandType : public Commander {
  public:
   Status Execute(Server *svr, Connection *conn, std::string *output) override {
@@ -247,7 +262,9 @@ class CommandDel : public Commander {
   }
 };
 
-REDIS_REGISTER_COMMANDS(MakeCmdAttr<CommandTTL>("ttl", 2, "read-only", 1, 1, 1),
+REDIS_REGISTER_COMMANDS(
+                        MakeCmdAttr<CommandDump>("dump", 2, "read-only", 1, 1, 1),
+                        MakeCmdAttr<CommandTTL>("ttl", 2, "read-only", 1, 1, 1),
                         MakeCmdAttr<CommandPTTL>("pttl", 2, "read-only", 1, 1, 1),
                         MakeCmdAttr<CommandType>("type", 2, "read-only", 1, 1, 1),
                         MakeCmdAttr<CommandObject>("object", 3, "read-only", 2, 2, 1),

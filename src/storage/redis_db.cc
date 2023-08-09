@@ -75,6 +75,24 @@ rocksdb::Status Database::GetRawMetadataByUserKey(const Slice &user_key, std::st
   return GetRawMetadata(ns_key, bytes);
 }
 
+rocksdb::Status Database::GetRawValue(const Slice &user_key, std::string *raw_value) {
+
+  std::string ns_key;
+  AppendNamespacePrefix(user_key, &ns_key);
+
+  // *type = kRedisNone;
+  LatestSnapShot ss(storage_);
+  rocksdb::ReadOptions read_options;
+  read_options.snapshot = ss.GetSnapShot();
+  std::string value;
+  rocksdb::Status s = storage_->Get(read_options, metadata_cf_handle_, ns_key, &value);
+  if (!s.ok()) return s.IsNotFound() ? rocksdb::Status::OK() : s;
+
+  *raw_value = value;
+
+  return rocksdb::Status::OK();
+}
+
 rocksdb::Status Database::Expire(const Slice &user_key, uint64_t timestamp) {
   std::string ns_key;
   AppendNamespacePrefix(user_key, &ns_key);

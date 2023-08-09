@@ -37,6 +37,7 @@ class Database {
   rocksdb::Status GetMetadata(RedisType type, const Slice &ns_key, Metadata *metadata);
   rocksdb::Status GetRawMetadata(const Slice &ns_key, std::string *bytes);
   rocksdb::Status GetRawMetadataByUserKey(const Slice &user_key, std::string *bytes);
+  rocksdb::Status GetRawValue(const Slice &user_key, std::string *value);
   rocksdb::Status Expire(const Slice &user_key, uint64_t timestamp);
   rocksdb::Status Del(const Slice &user_key);
   rocksdb::Status Exists(const std::vector<Slice> &keys, int *ret);
