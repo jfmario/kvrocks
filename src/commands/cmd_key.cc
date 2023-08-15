@@ -19,6 +19,7 @@
  */
 
 #include <cstdint>
+#include <iomanip>
 
 #include "commander.h"
 #include "commands/ttl_util.h"
@@ -27,17 +28,43 @@
 #include "server/server.h"
 #include "storage/redis_db.h"
 #include "time_util.h"
+#include "version.h"
 
 namespace redis {
 
 class CommandDump : public Commander {
  public:
   Status Execute(Server *svr, Connection *conn, std::string *output) override {
+
     redis::Database redis(svr->storage, conn->GetNamespace());
     std::string raw_value;
     auto s = redis.GetRawValue(args_[1], &raw_value);
     if (s.ok()) {
-      *output = redis::BulkString(raw_value);
+    
+      std::stringstream ss;
+      
+      for (char c : raw_value) {
+        if ((unsigned short) c >= 32 && (unsigned short) c <= 126)
+          ss << c;
+        else
+          ss << "\\x" 
+            << std::hex
+            << std::uppercase
+            << std::setw(2)
+            << std::setfill('0')
+            << (unsigned short) c;
+      }
+
+      // checksum
+      std::size_t hash = std::hash<std::string>{}(ss.str());
+      std::size_t checksum = hash % 10;
+
+      ss << checksum;
+
+      // kvrocks version (info command)
+      ss << "kvrocks_version:" << VERSION;
+
+      *output = redis::BulkString(ss.str());
       return Status::OK();
     }
 
